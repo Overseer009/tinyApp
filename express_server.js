@@ -13,8 +13,9 @@ const urlDatabase = {
 };
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);  
-  res.send("Ok");         
+  const ranUrl = generateRandomString();
+  urlDatabase[ranUrl] = req.body.longURL
+  res.redirect(`/urls/${ranUrl}`)
 });
 
 app.get("/urls", (req, res) => {
