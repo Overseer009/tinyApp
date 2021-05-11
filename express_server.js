@@ -1,3 +1,5 @@
+//Requirements & Dependencies-------------------------------------
+
 const express = require("express");
 const app = express();
 const PORT = 8080;
@@ -12,20 +14,43 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+//Server is listening
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
+});
+
+//POSTs----------------------------------------------------------
+
+//Creates a new shortURL on our /urls table.
 app.post("/urls", (req, res) => {
   const ranUrl = generateRandomString();
   urlDatabase[ranUrl] = req.body.longURL
   res.redirect(`/urls/${ranUrl}`)
 });
 
+app.post("/urls/:shortURL", (req, res) => {
+  urlDatabase[req.params.shortURL] = req.body.editUrl;
+  res.redirect('/urls');
+});
+
+//Route that deletes a URL from the user's list of shortened URLs.
+app.post("/urls/:shortURL/delete", (req, res) => {
+  delete urlDatabase[req.params.shortURL];
+  res.redirect('/urls');
+});
+
+//GETs-----------------------------------------------------------
+
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
+//Route to create new URL
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
+
 
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
@@ -38,16 +63,7 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-//Route that deletes a URL from the user's list of shortened URLs.
-app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect('/urls');
-});
-
-//
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
+//Helper Functions-----------------------------------------------
 
 //Generates a six character alpha-numeric string that is out shortURLs
 const generateRandomString = function() {
