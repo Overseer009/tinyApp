@@ -183,7 +183,6 @@ const loginFinder = function(email, password, users) {
     return {error: "Error: One or more fields are empty."};
   }
   for (let user in users) {
-    console.log(users[user].password);
     if (users[user].email === email && users[user].password === password) {
       return users[user];
     }
