@@ -55,7 +55,20 @@ app.post("/logout", (req, res) => {
   res.redirect('/urls')
 });
 
+//account registration
+app.post("/register", (req, res) => {
+  res.send('error 404')
+})
+
 //GETs-----------------------------------------------------------
+
+//loads the registrations page
+app.get("/register", (req,res) => {
+  const templateVars = { 
+    username: req.cookies["username"]
+  };
+  res.render("urls_registration", templateVars)
+});
 
 app.get("/urls", (req, res) => {
   const templateVars = { 

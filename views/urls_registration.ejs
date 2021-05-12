@@ -14,12 +14,16 @@
     <div class="card-body">
       <h2>Registration</h2>
       <form action="/register" method="POST">
-        <label for="email">Email:</label>
-        <label for="password">Password:</label>
-        <input type="email" name="email" placeholder="Enter email">
-        <input type="password" name="password" placeholder="Enter password">
         <div>
-          <button type="submit">Create Account</button>
+          <label for="email">Email:</label>
+          <input type="email" name="email" placeholder="Enter email">
+        </div>
+        <div>
+          <label for="password">Password:</label>
+          <input type="password" name="password" placeholder="Enter password">
+        </div>
+        <div>
+          <button type="submit" class="btn btn-info">Create Account</button>
         </div>      
       </form>
     </div>
