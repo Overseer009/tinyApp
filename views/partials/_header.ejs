@@ -11,16 +11,20 @@
       </div>
     </div>
     <div>
-      <% if(!user) { %> 
+      <% if(!user) { %>
         <form action="/login" method="POST">
           <input type="text" placeholder="Username" name="username">
           <button class="btn btn-secondary" type="submit">Log In</button>
+        </form>
+        <form action="/register" method="GET">
+          <button type="submit" class="btn btn-secondary">Register</button>
         </form>
       <% } else { %> 
         <form action="/logout" method="POST">
           <label for="logout"><%= user['email'] %> is Logged In to TinyApp</label>
           <button type="submit" class="btn btn-secondary" name="logout">Log Out</button>
         </form>
+
       <% } %> 
     </div>
   </nav>

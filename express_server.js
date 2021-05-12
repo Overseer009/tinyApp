@@ -94,7 +94,6 @@ app.get("/register", (req,res) => {
 //loads the main URL page, displaying the user's long and short URLs
 app.get("/urls", (req, res) => {
   const currentUser = userFinder(req.cookies["user_id"], users)
-  console.log(currentUser);
   const templateVars = { 
     user: currentUser,
     urls: urlDatabase,
@@ -143,11 +142,11 @@ const generateRandomString = function() {
 //Function that creates a new User
 const userCreator = (email, password, users) => {
   if (!email || !password) {
-    return {error: "There is an empty field"};
+    return {error: "Error: One or more fields are empty"};
   }
   for (let key in users) {
     if (users[key].email === email) {
-      return {error: "There is already a user with that email"};
+      return {error: "Error: That email is already registered"};
     }
   }
   const id = generateRandomString();
