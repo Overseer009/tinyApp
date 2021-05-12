@@ -59,8 +59,11 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   const userLogin = findLogin(email, password)
-  if (userLogin.error) {
-    return res.send(userLogin.error);
+  if (userLogin === "error1") {
+    return res.status(400).send("Error: One or more fields are empty.");
+  }
+  if (userLogin === "error2") {
+    return res.status(403).send("Error: Passwords is incorrect. If you haven't created an account, please register.")
   }
   res.cookie("user_id", userLogin.id)
   res.redirect('/urls')
@@ -76,8 +79,11 @@ app.post("/logout", (req, res) => {
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const newUser = createUser(email, password)
-  if (newUser.error) {
-    return res.send(newUser.error);
+  if (newUser === "error1") {
+    return res.status(400).send("Error: One or more fields are empty.");
+  }
+  if (newUser === "error2") {
+    return res.status(403).send("Error: Passwords is incorrect. If you haven't created an account, please register.")
   }
   res.cookie("user_id", newUser.id)
   res.redirect('/urls')
@@ -154,10 +160,10 @@ const generateRandomString = function(num) {
 //Function that creates a new User
 const createUser = (email, password) => {
   if (!email || !password) {
-    return {error: "Error: One or more fields are empty."};
+    return "error1"
   }
   if (findUserByEmail(email)) {
-    return {error: "Error: That email is already registered."};
+    return "error2" 
   }
   const id = generateRandomString(6);
   users[id] = { id, email, password };
@@ -187,12 +193,11 @@ const findUserByEmail = function(email) {
 //function used to make sure that the login information is correct
 const findLogin = function(email, password) {
   if (!email || !password) {
-    return {error: "Error: One or more fields are empty."};
+    return "error1"
   }
   const user = findUserByEmail(email);
   if (user && user.password === password) {
     return user;
   }
-  return {error: "Error: Passwords is incorrect. If you haven't created an account, please register."};
-}
-
+  return "error2"
+};
