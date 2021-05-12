@@ -39,7 +39,7 @@ app.listen(PORT, () => {
 
 //Creates a new shortURL on our /urls table.
 app.post("/urls", (req, res) => {
-  const ranUrl = generateRandomString();
+  const ranUrl = generateRandomString(6);
   urlDatabase[ranUrl] = req.body.longURL
   res.redirect(`/urls/${ranUrl}`)
 });
@@ -58,7 +58,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 //allows for user to login
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-  const userLogin = loginFinder(email, password, users)
+  const userLogin = findLogin(email, password)
   if (userLogin.error) {
     return res.send(userLogin.error);
   }
@@ -75,7 +75,7 @@ app.post("/logout", (req, res) => {
 //account registration, then leads to URLs page. 
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
-  const newUser = userCreator(email, password, users)
+  const newUser = createUser(email, password)
   if (newUser.error) {
     return res.send(newUser.error);
   }
@@ -87,7 +87,7 @@ app.post("/register", (req, res) => {
 
 //loads the log in page
 app.get("/login", (req, res) => {
-  const currentUser = userFinder(req.cookies["user_id"], users)
+  const currentUser = findUserById(req.cookies["user_id"])
   const templateVars = { 
     user: currentUser
   };
@@ -96,7 +96,7 @@ app.get("/login", (req, res) => {
 
 //loads the registrations page
 app.get("/register", (req,res) => {
-  const currentUser = userFinder(req.cookies["user_id"], users)
+  const currentUser = findUserById(req.cookies["user_id"])
   const templateVars = { 
     user: currentUser
   };
@@ -105,7 +105,7 @@ app.get("/register", (req,res) => {
 
 //loads the main URL page, displaying the user's long and short URLs
 app.get("/urls", (req, res) => {
-  const currentUser = userFinder(req.cookies["user_id"], users)
+  const currentUser = findUserById(req.cookies["user_id"])
   const templateVars = { 
     user: currentUser,
     urls: urlDatabase,
@@ -115,7 +115,7 @@ app.get("/urls", (req, res) => {
 
 //Route to create new URL
 app.get("/urls/new", (req, res) => {
-  const currentUser = userFinder(req.cookies["user_id"], users)
+  const currentUser = findUserById(req.cookies["user_id"])
   const templateVars = { 
     user: currentUser
   };
@@ -124,7 +124,7 @@ app.get("/urls/new", (req, res) => {
 
 
 app.get("/urls/:shortURL", (req, res) => {
-  const currentUser = userFinder(req.cookies["user_id"], users)
+  const currentUser = findUserById(req.cookies["user_id"])
   const templateVars = { 
     user: currentUser,
     shortURL: req.params.shortURL, 
@@ -142,50 +142,56 @@ app.get("/u/:shortURL", (req, res) => {
 //Helper Functions-----------------------------------------------
 
 //Generates a six character alpha-numeric string that is out shortURLs
-const generateRandomString = function() {
+const generateRandomString = function(num) {
   const charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let ranStr = '';
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < num; i++) {
     ranStr += charSet.charAt(Math.floor(Math.random() * charSet.length));
   }
   return ranStr;
 };
 
 //Function that creates a new User
-const userCreator = (email, password, users) => {
+const createUser = (email, password) => {
   if (!email || !password) {
     return {error: "Error: One or more fields are empty."};
   }
-  for (let key in users) {
-    if (users[key].email === email) {
-      return {error: "Error: That email is already registered."};
-    }
+  if (findUserByEmail(email)) {
+    return {error: "Error: That email is already registered."};
   }
-  const id = generateRandomString();
+  const id = generateRandomString(6);
   users[id] = { id, email, password };
-  console.log(users);
   return users[id];
 }
 
 //function used to find a user in the database
-const userFinder = function(id, userData) {
-  for (let keyId in userData) {
+const findUserById = function(id) {
+  for (let keyId in users) {
     if (keyId === id) {
-      return userData[keyId];
+      return users[keyId];
+    }
+  }
+  return undefined;
+};
+
+//That finds users by email
+const findUserByEmail = function(email) {
+  for (let keyId in users) {
+    if (users[keyId].email === email) {
+      return users[keyId];
     }
   }
   return undefined;
 };
 
 //function used to make sure that the login information is correct
-const loginFinder = function(email, password, users) {
+const findLogin = function(email, password) {
   if (!email || !password) {
     return {error: "Error: One or more fields are empty."};
   }
-  for (let user in users) {
-    if (users[user].email === email && users[user].password === password) {
-      return users[user];
-    }
+  const user = findUserByEmail(email);
+  if (user && user.password === password) {
+    return user;
   }
   return {error: "Error: Passwords is incorrect. If you haven't created an account, please register."};
 }
