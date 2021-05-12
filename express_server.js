@@ -58,8 +58,11 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 //allows for user to login
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-  const newUser = userCreator(email, password, users)
-  res.cookie("user_id", newUser)
+  const userLogin = loginFinder(email, password, users)
+  if (userLogin.error) {
+    return res.send(userLogin.error);
+  }
+  res.cookie("user_id", userLogin.id)
   res.redirect('/urls')
 });
 
@@ -81,6 +84,15 @@ app.post("/register", (req, res) => {
 });
 
 //GETs-----------------------------------------------------------
+
+//loads the log in page
+app.get("/login", (req, res) => {
+  const currentUser = userFinder(req.cookies["user_id"], users)
+  const templateVars = { 
+    user: currentUser
+  };
+  res.render("urls_login", templateVars)
+});
 
 //loads the registrations page
 app.get("/register", (req,res) => {
@@ -142,26 +154,40 @@ const generateRandomString = function() {
 //Function that creates a new User
 const userCreator = (email, password, users) => {
   if (!email || !password) {
-    return {error: "Error: One or more fields are empty"};
+    return {error: "Error: One or more fields are empty."};
   }
   for (let key in users) {
     if (users[key].email === email) {
-      return {error: "Error: That email is already registered"};
+      return {error: "Error: That email is already registered."};
     }
   }
   const id = generateRandomString();
   users[id] = { id, email, password };
+  console.log(users);
   return users[id];
 }
 
 //function used to find a user in the database
-const userFinder = function(id, userDb) {
-  for (let key in userDb) {
-    if (key === id) {
-      return userDb[key];
+const userFinder = function(id, userData) {
+  for (let keyId in userData) {
+    if (keyId === id) {
+      return userData[keyId];
     }
   }
   return undefined;
 };
 
+//function used to make sure that the login information is correct
+const loginFinder = function(email, password, users) {
+  if (!email || !password) {
+    return {error: "Error: One or more fields are empty."};
+  }
+  for (let user in users) {
+    console.log(users[user].password);
+    if (users[user].email === email && users[user].password === password) {
+      return users[user];
+    }
+  }
+  return {error: "Error: Passwords is incorrect. If you haven't created an account, please register."};
+}
 

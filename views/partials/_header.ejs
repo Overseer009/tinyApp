@@ -12,12 +12,8 @@
     </div>
     <div>
       <% if(!user) { %>
-        <form action="/login" method="POST">
-          <button class="btn btn-secondary" type="submit">Log In</button>
-        </form>
-        <form action="/register" method="GET">
-          <button type="submit" class="btn btn-secondary">Register</button>
-        </form>
+          <a class="btn btn-secondary" href="/login">Log In</a>
+          <a class="btn btn-secondary" href="/register">Register</a>
       <% } else { %> 
         <form action="/logout" method="POST">
           <label for="logout"><%= user['email'] %> is Logged In to TinyApp</label>
