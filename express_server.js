@@ -17,6 +17,19 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
+
 //Server is listening
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
@@ -55,24 +68,30 @@ app.post("/logout", (req, res) => {
   res.redirect('/urls')
 });
 
-//account registration
+//account registration, then leads to URLs page. 
 app.post("/register", (req, res) => {
-  res.send('error 404')
+  const { email, password } = req.body;
+  const newUser = userCreator(email, password, users)
+  res.cookie("user_id", newUser)
+  res.redirect('/urls')
 })
 
 //GETs-----------------------------------------------------------
 
 //loads the registrations page
 app.get("/register", (req,res) => {
+  const currentUser = userFinder(req.cookies["user_id"])
   const templateVars = { 
-    username: req.cookies["username"]
+    user: currentUser
   };
   res.render("urls_registration", templateVars)
 });
 
+//loads the main URL page, displaying the user's long and short URLs
 app.get("/urls", (req, res) => {
+  const currentUser = userFinder(req.cookies["user_id"])
   const templateVars = { 
-    username: req.cookies["username"],
+    user: currentUser,
     urls: urlDatabase,
   };
   res.render("urls_index", templateVars);
@@ -80,19 +99,20 @@ app.get("/urls", (req, res) => {
 
 //Route to create new URL
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    username: req.cookies["username"]
-  }
+  const currentUser = userFinder(req.cookies["user_id"])
+  const templateVars = { 
+    user: currentUser
+  };
   res.render("urls_new", templateVars);
 });
 
 
 app.get("/urls/:shortURL", (req, res) => {
+  const currentUser = userFinder(req.cookies["user_id"])
   const templateVars = { 
-    username: req.cookies["username"],
+    user: currentUser,
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL]
-    
   };
   res.render("urls_show", templateVars);
 });
@@ -114,3 +134,30 @@ const generateRandomString = function() {
   }
   return ranStr;
 };
+
+//Function that creates a new User
+const userCreator = (email, password, users) => {
+  if (!email || !password) {
+    return {error:"There is an empty field"};
+  }
+  for (let key in users) {
+    if (users[key].email === email) {
+      return {error:"There is already a user with that email"};
+    }
+  }
+  const id = generateRandomString();
+  users[id] = { id, email, password };
+  return users[id];
+}
+
+//function used to find a user in the database
+const userFinder = function(id, userDb) {
+  for (let key in userDb) {
+    if (key === id) {
+      return userDb[key];
+    }
+  }
+  return undefined;
+};
+
+
