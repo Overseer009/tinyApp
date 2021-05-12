@@ -57,14 +57,15 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 //allows for user to login
 app.post("/login", (req, res) => {
-  const username = req.body.username
-  res.cookie("username", username)
+  const { email, password } = req.body;
+  const newUser = userCreator(email, password, users)
+  res.cookie("user_id", newUser)
   res.redirect('/urls')
 });
 
 //allows the user to log out
 app.post("/logout", (req, res) => {
-  res.clearCookie("username")
+  res.clearCookie("user_id")
   res.redirect('/urls')
 });
 
@@ -72,15 +73,18 @@ app.post("/logout", (req, res) => {
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const newUser = userCreator(email, password, users)
-  res.cookie("user_id", newUser)
+  if (newUser.error) {
+    return res.send(newUser.error);
+  }
+  res.cookie("user_id", newUser.id)
   res.redirect('/urls')
-})
+});
 
 //GETs-----------------------------------------------------------
 
 //loads the registrations page
 app.get("/register", (req,res) => {
-  const currentUser = userFinder(req.cookies["user_id"])
+  const currentUser = userFinder(req.cookies["user_id"], users)
   const templateVars = { 
     user: currentUser
   };
@@ -89,7 +93,8 @@ app.get("/register", (req,res) => {
 
 //loads the main URL page, displaying the user's long and short URLs
 app.get("/urls", (req, res) => {
-  const currentUser = userFinder(req.cookies["user_id"])
+  const currentUser = userFinder(req.cookies["user_id"], users)
+  console.log(currentUser);
   const templateVars = { 
     user: currentUser,
     urls: urlDatabase,
@@ -99,7 +104,7 @@ app.get("/urls", (req, res) => {
 
 //Route to create new URL
 app.get("/urls/new", (req, res) => {
-  const currentUser = userFinder(req.cookies["user_id"])
+  const currentUser = userFinder(req.cookies["user_id"], users)
   const templateVars = { 
     user: currentUser
   };
@@ -108,7 +113,7 @@ app.get("/urls/new", (req, res) => {
 
 
 app.get("/urls/:shortURL", (req, res) => {
-  const currentUser = userFinder(req.cookies["user_id"])
+  const currentUser = userFinder(req.cookies["user_id"], users)
   const templateVars = { 
     user: currentUser,
     shortURL: req.params.shortURL, 
@@ -138,11 +143,11 @@ const generateRandomString = function() {
 //Function that creates a new User
 const userCreator = (email, password, users) => {
   if (!email || !password) {
-    return {error:"There is an empty field"};
+    return {error: "There is an empty field"};
   }
   for (let key in users) {
     if (users[key].email === email) {
-      return {error:"There is already a user with that email"};
+      return {error: "There is already a user with that email"};
     }
   }
   const id = generateRandomString();
