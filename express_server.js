@@ -6,12 +6,19 @@ const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
+const cookieSession = require('cookie-session');
 
-app.use(cookieParser())
+app.use(cookieParser());
+
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
 
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
+app.set('views', './views');
 
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
@@ -41,14 +48,13 @@ app.listen(PORT, () => {
 //Creates a new shortURL on our urls table.
 app.post("/urls", (req, res) => {
   const ranUrl = generateRandomString(6);
-  urlDatabase[ranUrl] = {longURL: req.body.longURL, userID: req.cookies["user_id"]}
-  console.log(urlDatabase[ranUrl]);
+  urlDatabase[ranUrl] = {longURL: req.body.longURL, userID: req.session.user_id}
   res.redirect(`/urls/${ranUrl}`)
 });
 
 //edits the URLs
 app.post("/urls/:shortURL", (req, res) => {
-  const currentUser = findUserById(req.cookies["user_id"])
+  const currentUser = users[req.session.user_id]
   if (!currentUser) {
     return res.send("This is not your account, please log in.")
   }
@@ -58,7 +64,7 @@ app.post("/urls/:shortURL", (req, res) => {
 
 //Route that deletes a URL from the user's list of shortened URLs.
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const currentUser = findUserById(req.cookies["user_id"])
+  const currentUser = users[req.session.user_id]
   if (!currentUser) {
     return res.send("This is not your account, please log in.")
   }
@@ -73,13 +79,13 @@ app.post("/login", (req, res) => {
   if (userLogin.error) {
     return res.status(userLogin.error.statusCode).send(userLogin.error.messege)
   }
-  res.cookie("user_id", userLogin.id)
+  req.session.user_id = userLogin.data;
   res.redirect('/urls')
 });
 
 //allows the user to log out
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id")
+  req.session = null;
   res.redirect('/urls')
 });
 
@@ -90,7 +96,7 @@ app.post("/register", (req, res) => {
   if (newUser.error) {
     return res.status(400).send(newUser.error);
   }
-  res.cookie("user_id", newUser.data)
+  req.session.user_id = newUser.data;
   res.redirect('/urls')
 });
 
@@ -98,7 +104,7 @@ app.post("/register", (req, res) => {
 
 //loads the log in page
 app.get("/login", (req, res) => {
-  const currentUser = findUserById(req.cookies["user_id"])
+  const currentUser = users[req.session.user_id]
   const templateVars = { 
     user: currentUser
   };
@@ -107,7 +113,7 @@ app.get("/login", (req, res) => {
 
 //loads the registrations page
 app.get("/register", (req,res) => {
-  const currentUser = findUserById(req.cookies["user_id"])
+  const currentUser = users[req.session.user_id]
   const templateVars = { 
     user: currentUser
   };
@@ -116,12 +122,12 @@ app.get("/register", (req,res) => {
 
 //loads the main URL page, displaying the user's long and short URLs
 app.get("/urls", (req, res) => {
-  const currentUser = findUserById(req.cookies["user_id"])
+  const currentUser = users[req.session.user_id]
   const templateVars = { 
     user: currentUser,
-    urls: urlsForUser(req.cookies["user_id"])
+    urls: urlsForUser(req.session.user_id)
   };
-  if (!currentUser) {
+  if (!req.session.user_id) {
     return res.send("This is not your account, please log in.")
   }
   res.render("urls_index", templateVars); 
@@ -129,7 +135,7 @@ app.get("/urls", (req, res) => {
 
 //Route to create new URL
 app.get("/urls/new", (req, res) => {
-  const currentUser = findUserById(req.cookies["user_id"])
+  const currentUser = users[req.session.user_id];
   const templateVars = { 
     user: currentUser
   };
@@ -142,7 +148,7 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
-  const currentUser = findUserById(req.cookies["user_id"])
+  const currentUser = users[req.session.user_id]
   const templateVars = { 
     user: currentUser,
     shortURL: req.params.shortURL, 
@@ -180,25 +186,15 @@ const createUser = (email, password) => {
   const hashedPassword = bcrypt.hashSync(password, 10);
   const id = generateRandomString(6);
   users[id] = { id, email, hashedPassword };
-  console.log(users[id]);
+
   return { error: null, data: id };
 }
 
-//function used to find a user in the database
-const findUserById = function(id) {
-  for (let keyId in users) {
-    if (keyId === id) {
-      return users[keyId];
-    }
-  }
-  return undefined;
-};
-
 //That finds users by email
 const findUserByEmail = function(email) {
-  for (let keyId in users) {
-    if (users[keyId].email === email) {
-      return users[keyId];
+  for (let Id in users) {
+    if (users[Id].email === email) {
+      return users[Id];
     }
   }
   return undefined;
