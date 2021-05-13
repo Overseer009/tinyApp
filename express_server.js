@@ -4,7 +4,8 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
 
 app.use(cookieParser())
 
@@ -49,22 +50,20 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:shortURL", (req, res) => {
   const currentUser = findUserById(req.cookies["user_id"])
   if (!currentUser) {
-    res.send("This is not your account, please log in.")
-  } else {
+    return res.send("This is not your account, please log in.")
+  }
     urlDatabase[req.params.shortURL].longURL = req.body.editUrl;
     res.redirect('/urls');
-  }
 });
 
 //Route that deletes a URL from the user's list of shortened URLs.
 app.post("/urls/:shortURL/delete", (req, res) => {
   const currentUser = findUserById(req.cookies["user_id"])
   if (!currentUser) {
-    res.send("This is not your account, please log in.")
-  } else {
-    delete urlDatabase[req.params.shortURL];
-    res.redirect('/urls'); 
+    return res.send("This is not your account, please log in.")
   }
+  delete urlDatabase[req.params.shortURL];
+  res.redirect('/urls'); 
 });
 
 //allows for user to login
@@ -91,13 +90,10 @@ app.post("/logout", (req, res) => {
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const newUser = createUser(email, password)
-  if (newUser === "error1") {
-    return res.status(400).send("Error: One or more fields are empty.");
+  if (newUser.error) {
+    return res.status(400).send(newUser.error);
   }
-  if (newUser === "error2") {
-    return res.status(403).send("Error: Passwords is incorrect. If you haven't created an account, please register.")
-  }
-  res.cookie("user_id", newUser.id)
+  res.cookie("user_id", newUser.data)
   res.redirect('/urls')
 });
 
@@ -129,7 +125,7 @@ app.get("/urls", (req, res) => {
     urls: urlsForUser(req.cookies["user_id"])
   };
   if (!currentUser) {
-    res.send("This is not your account, please log in.")
+    return res.send("This is not your account, please log in.")
   }
   res.render("urls_index", templateVars); 
 });
@@ -141,10 +137,10 @@ app.get("/urls/new", (req, res) => {
     user: currentUser
   };
   if(!currentUser) {
-    res.redirect("/login");
-  } else {
-    res.render("urls_new", templateVars);
+    return res.redirect("/login");
   }
+  res.render("urls_new", templateVars);
+
 });
 
 app.get("/urls/:shortURL", (req, res) => {
@@ -179,14 +175,16 @@ const generateRandomString = function(num) {
 //Function that creates a new User
 const createUser = (email, password) => {
   if (!email || !password) {
-    return "error1"
+    return { error: "Error: One or more fields are empty.", data: null }
   }
   if (findUserByEmail(email)) {
-    return "error2" 
+    return { error: "Error: Passwords is incorrect. If you haven't created an account, please register.", data: null }
   }
+  const hashedPassword = bcrypt.hashSync(password, 10);
   const id = generateRandomString(6);
-  users[id] = { id, email, password };
-  return users[id];
+  users[id] = { id, email, hashedPassword };
+  console.log(users[id]);
+  return { error: null, data: id };
 }
 
 //function used to find a user in the database
