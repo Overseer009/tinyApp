@@ -37,7 +37,7 @@ app.listen(PORT, () => {
 
 //POSTs----------------------------------------------------------
 
-//Creates a new shortURL on our /urls table.
+//Creates a new shortURL on our urls table.
 app.post("/urls", (req, res) => {
   const ranUrl = generateRandomString(6);
   urlDatabase[ranUrl] = {longURL: req.body.longURL, userID: req.cookies["user_id"]}
@@ -128,7 +128,10 @@ app.get("/urls", (req, res) => {
     user: currentUser,
     urls: urlsForUser(req.cookies["user_id"])
   };
-    res.render("urls_index", templateVars); 
+  if (!currentUser) {
+    res.send("This is not your account, please log in.")
+  }
+  res.render("urls_index", templateVars); 
 });
 
 //Route to create new URL
