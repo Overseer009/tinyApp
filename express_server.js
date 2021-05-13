@@ -13,8 +13,8 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
 
 const users = { 
@@ -40,19 +40,31 @@ app.listen(PORT, () => {
 //Creates a new shortURL on our /urls table.
 app.post("/urls", (req, res) => {
   const ranUrl = generateRandomString(6);
-  urlDatabase[ranUrl] = req.body.longURL
+  urlDatabase[ranUrl] = {longURL: req.body.longURL, userID: req.cookies["user_id"]}
+  console.log(urlDatabase[ranUrl]);
   res.redirect(`/urls/${ranUrl}`)
 });
 
+//edits the URLs
 app.post("/urls/:shortURL", (req, res) => {
-  urlDatabase[req.params.shortURL] = req.body.editUrl;
-  res.redirect('/urls');
+  const currentUser = findUserById(req.cookies["user_id"])
+  if (!currentUser) {
+    res.send("This is not your account, please log in.")
+  } else {
+    urlDatabase[req.params.shortURL].longURL = req.body.editUrl;
+    res.redirect('/urls');
+  }
 });
 
 //Route that deletes a URL from the user's list of shortened URLs.
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect('/urls');
+  const currentUser = findUserById(req.cookies["user_id"])
+  if (!currentUser) {
+    res.send("This is not your account, please log in.")
+  } else {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect('/urls'); 
+  }
 });
 
 //allows for user to login
@@ -114,9 +126,9 @@ app.get("/urls", (req, res) => {
   const currentUser = findUserById(req.cookies["user_id"])
   const templateVars = { 
     user: currentUser,
-    urls: urlDatabase,
+    urls: urlsForUser(req.cookies["user_id"])
   };
-  res.render("urls_index", templateVars);
+    res.render("urls_index", templateVars); 
 });
 
 //Route to create new URL
@@ -125,23 +137,27 @@ app.get("/urls/new", (req, res) => {
   const templateVars = { 
     user: currentUser
   };
-  res.render("urls_new", templateVars);
+  if(!currentUser) {
+    res.redirect("/login");
+  } else {
+    res.render("urls_new", templateVars);
+  }
 });
 
-
 app.get("/urls/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   const currentUser = findUserById(req.cookies["user_id"])
   const templateVars = { 
     user: currentUser,
     shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL]
-  };
-  res.render("urls_show", templateVars);
+    longURL
+  }; 
+    res.render("urls_show", templateVars); 
 });
 
 //Leads to the main site of our longURL through our short URL
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL]
+  const longURL = urlDatabase[req.params.shortURL].longURL
   res.redirect(longURL);
 });
 
@@ -201,3 +217,14 @@ const findLogin = function(email, password) {
   }
   return "error2"
 };
+
+//checks to see if the urls ids match the user id
+const urlsForUser = function(id) {
+  let valid = {}
+  for (let shortURL in urlDatabase) {
+    if (id === urlDatabase[shortURL].userID) {
+      valid[shortURL] = urlDatabase[shortURL]
+    }
+  }
+  return valid
+}
