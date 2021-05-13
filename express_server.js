@@ -70,11 +70,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   const userLogin = findLogin(email, password)
-  if (userLogin === "error1") {
-    return res.status(400).send("Error: One or more fields are empty.");
-  }
-  if (userLogin === "error2") {
-    return res.status(403).send("Error: Passwords is incorrect. If you haven't created an account, please register.")
+  if (userLogin.error) {
+    return res.status(userLogin.error.statusCode).send(userLogin.error.messege)
   }
   res.cookie("user_id", userLogin.id)
   res.redirect('/urls')
@@ -178,7 +175,7 @@ const createUser = (email, password) => {
     return { error: "Error: One or more fields are empty.", data: null }
   }
   if (findUserByEmail(email)) {
-    return { error: "Error: Passwords is incorrect. If you haven't created an account, please register.", data: null }
+    return { error: "<html><body><h2>Error: This email is already registered.</h2></body></html>", data: null }
   }
   const hashedPassword = bcrypt.hashSync(password, 10);
   const id = generateRandomString(6);
@@ -210,13 +207,19 @@ const findUserByEmail = function(email) {
 //function used to make sure that the login information is correct
 const findLogin = function(email, password) {
   if (!email || !password) {
-    return "error1"
+    return { error: {
+      messege: "Error: One or more fields are empty.",
+      statusCode: 400
+    }, data: null }
   }
   const user = findUserByEmail(email);
-  if (user && user.password === password) {
-    return user;
+  if (user &&  bcrypt.compareSync(password, user.hashedPassword)) {
+    return { error: null, data: user };
   }
-  return "error2"
+  return { error: {
+    messege: "Error: Passwords is incorrect. If you haven't created an account, please register.",
+    statusCode: 403
+  }, data: null }
 };
 
 //checks to see if the urls ids match the user id
