@@ -49,7 +49,6 @@ app.listen(PORT, () => {
 app.post("/urls", (req, res) => {
   const ranUrl = generateRandomString(6);
   urlDatabase[ranUrl] = {longURL: req.body.longURL, userID: req.session.user_id};
-  console.log("url: ", urlDatabase[ranUrl]);
   res.redirect(`/urls/${ranUrl}`);
 });
 
@@ -77,7 +76,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   const userLogin = findLogin(email, password, users);
-  console.log("userLogin", userLogin);
   if (userLogin.error) {
     return res.status(userLogin.error.statusCode).send(userLogin.error.messege);
   }
@@ -125,9 +123,6 @@ app.get("/register", (req,res) => {
 //loads the main URL page, displaying the user's long and short URLs
 app.get("/urls", (req, res) => {
   const currentUser = users[req.session.user_id];
-  console.log("cookie", req.session.user_id);
-  console.log("currentUser", currentUser);
-  console.log("users", users);
   const templateVars = {
     user: currentUser,
     urls: urlsForUser(req.session.user_id, urlDatabase)

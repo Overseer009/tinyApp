@@ -65,4 +65,4 @@ const urlsForUser = function(id, database) {
   return valid
 }
 
-module.exports = { urlsForUser, findLogin, createUser, generateRandomString };
+module.exports = { urlsForUser, findLogin, createUser, generateRandomString, findUserByEmail };
