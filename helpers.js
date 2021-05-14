@@ -11,39 +11,39 @@ const generateRandomString = function(num) {
 };
 
 //Function that creates a new User
-const createUser = (email, password) => {
+const createUser = (email, password, database) => {
   if (!email || !password) {
     return { error: "Error: One or more fields are empty.", data: null }
   }
-  if (findUserByEmail(email)) {
+  if (findUserByEmail(email, database)) {
     return { error: "<html><body><h2>Error: This email is already registered.</h2></body></html>", data: null }
   }
   const hashedPassword = bcrypt.hashSync(password, 10);
   const id = generateRandomString(6);
-  users[id] = { id, email, hashedPassword };
+  database[id] = { id, email, hashedPassword };
 
   return { error: null, data: id };
 }
 
 //That finds users by email
-const findUserByEmail = function(email) {
-  for (let Id in users) {
-    if (users[Id].email === email) {
-      return users[Id];
+const findUserByEmail = function(email, database) {
+  for (let Id in database) {
+    if (database[Id].email === email) {
+      return database[Id];
     }
   }
   return undefined;
 };
 
 //function used to make sure that the login information is correct
-const findLogin = function(email, password) {
+const findLogin = function(email, password, database) {
   if (!email || !password) {
     return { error: {
       messege: "Error: One or more fields are empty.",
       statusCode: 400
     }, data: null }
   }
-  const user = findUserByEmail(email);
+  const user = findUserByEmail(email, database);
   if (user &&  bcrypt.compareSync(password, user.hashedPassword)) {
     return { error: null, data: user };
   }
@@ -54,14 +54,15 @@ const findLogin = function(email, password) {
 };
 
 //checks to see if the urls ids match the user id
-const urlsForUser = function(id) {
+const urlsForUser = function(id, database) {
   let valid = {}
-  for (let shortURL in urlDatabase) {
-    if (id === urlDatabase[shortURL].userID) {
-      valid[shortURL] = urlDatabase[shortURL]
+  for (let shortURL in database) {
+    if (id === database[shortURL].userID) {
+      valid[shortURL] = database[shortURL]
+      
     }
   }
   return valid
 }
 
-module.exports = { urlsForUser, findLogin, findUserByEmail, findLogin, createUser, generateRandomString };
+module.exports = { urlsForUser, findLogin, createUser, generateRandomString };
