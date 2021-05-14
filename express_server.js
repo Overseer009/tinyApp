@@ -36,7 +36,7 @@ app.post("/urls", (req, res) => {
   const currentUser = users[req.session.user_id];
   const ranUrl = generateRandomString(6);
   if (!currentUser) {
-    return res.send("<html><body><h2>Please login to have access to this feature</h2></body></html>")
+    return res.send("<html><body><h2>Please login to have access to this feature</h2></body></html>");
   }
   urlDatabase[ranUrl] = {longURL: req.body.longURL, userID: req.session.user_id};
   res.redirect(`/urls/${ranUrl}`);
@@ -50,8 +50,8 @@ app.post("/urls/:shortURL", (req, res) => {
   }
   //checks to see if the URLs match what the user has
   const urlChecker = checkUrl(currentUser.id, urlDatabase);
-  if(!urlChecker.includes(req.params.shortURL)) {
-    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>")
+  if (!urlChecker.includes(req.params.shortURL)) {
+    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>");
   }
   urlDatabase[req.params.shortURL].longURL = req.body.editUrl;
   res.redirect('/urls');
@@ -65,8 +65,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   }
   //checks to see if the URLs match what the user has
   const urlChecker = checkUrl(currentUser.id, urlDatabase);
-  if(!urlChecker.includes(req.params.shortURL)) {
-    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>")
+  if (!urlChecker.includes(req.params.shortURL)) {
+    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>");
   }
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
@@ -110,9 +110,9 @@ app.get('/', (req, res) => {
     user: currentUser
   };
   if (!currentUser) {
-    res.render('urls_login', templateVars)
+    res.render('urls_login', templateVars);
   } else {
-    res.render('urls_index', templateVars)
+    res.render('urls_index', templateVars);
   }
 });
 
@@ -145,12 +145,12 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const currentUser = users[req.session.user_id];
   if (!currentUser) {
-    return res.send("<html><body><h2>Please login to have access to this feature</h2></body></html>")
+    return res.send("<html><body><h2>Please login to have access to this feature</h2></body></html>");
   }
   //checks to see if the URLs match what the user has
   const urlChecker = checkUrl(currentUser.id, urlDatabase);
-  if(!urlChecker.includes(req.params.shortURL)) {
-    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>")
+  if (!urlChecker.includes(req.params.shortURL)) {
+    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>");
   }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   const templateVars = {
@@ -165,8 +165,8 @@ app.get("/urls/:shortURL", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   const currentUser = users[req.session.user_id];
   const urlChecker = checkUrl(currentUser.id, urlDatabase);
-  if(!urlChecker.includes(req.params.shortURL)) {
-    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>")
+  if (!urlChecker.includes(req.params.shortURL)) {
+    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>");
   }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);

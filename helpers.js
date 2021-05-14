@@ -13,17 +13,17 @@ const generateRandomString = function(num) {
 //Function that creates a new User
 const createUser = (email, password, database) => {
   if (!email || !password) {
-    return { error: "Error: One or more fields are empty.", data: null }
+    return { error: "Error: One or more fields are empty.", data: null };
   }
   if (findUserByEmail(email, database)) {
-    return { error: "<html><body><h2>Error: This email is already registered.</h2></body></html>", data: null }
+    return { error: "<html><body><h2>Error: This email is already registered.</h2></body></html>", data: null };
   }
   const hashedPassword = bcrypt.hashSync(password, 10);
   const id = generateRandomString(6);
   database[id] = { id, email, hashedPassword };
 
   return { error: null, data: id };
-}
+};
 
 //That finds users by email
 const findUserByEmail = function(email, database) {
@@ -41,7 +41,7 @@ const findLogin = function(email, password, database) {
     return { error: {
       messege: "Error: One or more fields are empty.",
       statusCode: 400
-    }, data: null }
+    }, data: null };
   }
   const user = findUserByEmail(email, database);
   if (user &&  bcrypt.compareSync(password, user.hashedPassword)) {
@@ -50,30 +50,30 @@ const findLogin = function(email, password, database) {
   return { error: {
     messege: "Error: Passwords is incorrect. If you haven't created an account, please register.",
     statusCode: 403
-  }, data: null }
+  }, data: null };
 };
 
 //checks to see if the urls ids match the user id
 const urlsForUser = function(id, database) {
-  let valid = {}
+  let valid = {};
   for (let shortURL in database) {
     if (id === database[shortURL].userID) {
-      valid[shortURL] = database[shortURL]
+      valid[shortURL] = database[shortURL];
       
     }
   }
-  return valid
-}
+  return valid;
+};
 
-//checks if a user has a URL
+//checks if a user has a URL already
 const checkUrl = function(id, database) {
   let array = [];
   for (let shortUrl in database) {
-    if (id === database[shortUrl].userID){
-      array.push(shortUrl) 
+    if (id === database[shortUrl].userID) {
+      array.push(shortUrl);
     }
   }
-  return array
-}
+  return array;
+};
 
 module.exports = { urlsForUser, findLogin, createUser, generateRandomString, findUserByEmail, checkUrl };
