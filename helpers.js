@@ -65,4 +65,15 @@ const urlsForUser = function(id, database) {
   return valid
 }
 
-module.exports = { urlsForUser, findLogin, createUser, generateRandomString, findUserByEmail };
+//checks if a user has a URL
+const checkUrl = function(id, database) {
+  let array = [];
+  for (let shortUrl in database) {
+    if (id === database[shortUrl].userID){
+      array.push(shortUrl) 
+    }
+  }
+  return array
+}
+
+module.exports = { urlsForUser, findLogin, createUser, generateRandomString, findUserByEmail, checkUrl };

@@ -1,14 +1,11 @@
 //Requirements & Dependencies-------------------------------------
 
-const { urlsForUser, findLogin, createUser, generateRandomString } = require("./helpers");
+const { urlsForUser, findLogin, createUser, generateRandomString, checkUrl } = require("./helpers");
 const express = require("express");
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
-
-app.use(cookieParser());
 
 app.use(cookieSession({
   name: 'session',
@@ -20,34 +17,27 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.set('views', './views');
 
-const urlDatabase = {
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
-};
+//Databases------------------------------------------------------
 
-const users = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur"
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
-  }
-};
+const urlDatabase = {};
+const users = {};
 
-//Server is listening
+//Server is listening--------------------------------------------
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
 //POSTs----------------------------------------------------------
 
+
 //Creates a new shortURL on our urls table.
 app.post("/urls", (req, res) => {
+  const currentUser = users[req.session.user_id];
   const ranUrl = generateRandomString(6);
+  if (!currentUser) {
+    return res.send("<html><body><h2>Please login to have access to this feature</h2></body></html>")
+  }
   urlDatabase[ranUrl] = {longURL: req.body.longURL, userID: req.session.user_id};
   res.redirect(`/urls/${ranUrl}`);
 });
@@ -56,7 +46,12 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:shortURL", (req, res) => {
   const currentUser = users[req.session.user_id];
   if (!currentUser) {
-    return res.send("This is not your account, please log in.");
+    return res.send("<html><body><h2>This is not your account, please log in.</h2></body></html>");
+  }
+  //checks to see if the URLs match what the user has
+  const urlChecker = checkUrl(currentUser.id, urlDatabase);
+  if(!urlChecker.includes(req.params.shortURL)) {
+    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>")
   }
   urlDatabase[req.params.shortURL].longURL = req.body.editUrl;
   res.redirect('/urls');
@@ -66,7 +61,12 @@ app.post("/urls/:shortURL", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   const currentUser = users[req.session.user_id];
   if (!currentUser) {
-    return res.send("This is not your account, please log in.");
+    return res.send("<html><body><h2>This is not your account, please log in.</h2></body></html>");
+  }
+  //checks to see if the URLs match what the user has
+  const urlChecker = checkUrl(currentUser.id, urlDatabase);
+  if(!urlChecker.includes(req.params.shortURL)) {
+    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>")
   }
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
@@ -102,6 +102,76 @@ app.post("/register", (req, res) => {
 
 //GETs-----------------------------------------------------------
 
+//the staring page, will lead to the login screen if not logged in
+app.get('/', (req, res) => {
+  const currentUser = users[req.session.user_id];
+  const templateVars = {
+    urls: urlDatabase,
+    user: currentUser
+  };
+  if (!currentUser) {
+    res.render('urls_login', templateVars)
+  } else {
+    res.render('urls_index', templateVars)
+  }
+});
+
+//loads the main URL page, displaying the user's long and short URLs
+app.get("/urls", (req, res) => {
+  const currentUser = users[req.session.user_id];
+  const templateVars = {
+    user: currentUser,
+    urls: urlsForUser(req.session.user_id, urlDatabase)
+  };
+  if (!currentUser) {
+    return res.send("<html><body><h2>This is not your account, please log in.</h2></body></html>");
+  }
+  res.render("urls_index", templateVars);
+});
+
+//Route to create new URL
+app.get("/urls/new", (req, res) => {
+  const currentUser = users[req.session.user_id];
+  const templateVars = {
+    user: currentUser
+  };
+  if (!currentUser) {
+    return res.redirect("/login");
+  }
+  res.render("urls_new", templateVars);
+});
+
+//used to verify URLs and load the editing page (urls_show)
+app.get("/urls/:shortURL", (req, res) => {
+  const currentUser = users[req.session.user_id];
+  if (!currentUser) {
+    return res.send("<html><body><h2>Please login to have access to this feature</h2></body></html>")
+  }
+  //checks to see if the URLs match what the user has
+  const urlChecker = checkUrl(currentUser.id, urlDatabase);
+  if(!urlChecker.includes(req.params.shortURL)) {
+    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>")
+  }
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  const templateVars = {
+    user: currentUser,
+    shortURL: req.params.shortURL,
+    longURL
+  };
+  res.render("urls_show", templateVars);
+});
+
+//Leads to the main site of our longURL through our short URL
+app.get("/u/:shortURL", (req, res) => {
+  const currentUser = users[req.session.user_id];
+  const urlChecker = checkUrl(currentUser.id, urlDatabase);
+  if(!urlChecker.includes(req.params.shortURL)) {
+    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>")
+  }
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  res.redirect(longURL);
+});
+
 //loads the log in page
 app.get("/login", (req, res) => {
   const currentUser = users[req.session.user_id];
@@ -118,47 +188,4 @@ app.get("/register", (req,res) => {
     user: currentUser
   };
   res.render("urls_registration", templateVars);
-});
-
-//loads the main URL page, displaying the user's long and short URLs
-app.get("/urls", (req, res) => {
-  const currentUser = users[req.session.user_id];
-  const templateVars = {
-    user: currentUser,
-    urls: urlsForUser(req.session.user_id, urlDatabase)
-  };
-  if (!currentUser) {
-    return res.send("This is not your account, please log in.");
-  }
-  res.render("urls_index", templateVars);
-});
-
-//Route to create new URL
-app.get("/urls/new", (req, res) => {
-  const currentUser = users[req.session.user_id];
-  const templateVars = {
-    user: currentUser
-  };
-  if (!currentUser) {
-    return res.redirect("/login");
-  }
-  res.render("urls_new", templateVars);
-
-});
-
-app.get("/urls/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  const currentUser = users[req.session.user_id];
-  const templateVars = {
-    user: currentUser,
-    shortURL: req.params.shortURL,
-    longURL
-  };
-  res.render("urls_show", templateVars);
-});
-
-//Leads to the main site of our longURL through our short URL
-app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
 });
