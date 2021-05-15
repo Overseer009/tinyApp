@@ -22,12 +22,6 @@ app.set('views', './views');
 const urlDatabase = {};
 const users = {};
 
-//Server is listening--------------------------------------------
-
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
-
 //POSTs----------------------------------------------------------
 
 
@@ -124,7 +118,7 @@ app.get("/urls", (req, res) => {
     urls: urlsForUser(req.session.user_id, urlDatabase)
   };
   if (!currentUser) {
-    return res.send("<html><body><h2>This is not your account, please log in.</h2></body></html>");
+    return res.send("<html><body><h2>Please register or login before trying to access URLS</h2></body></html>");
   }
   res.render("urls_index", templateVars);
 });
@@ -163,10 +157,8 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //Leads to the main site of our longURL through our short URL
 app.get("/u/:shortURL", (req, res) => {
-  const currentUser = users[req.session.user_id];
-  const urlChecker = checkUrl(currentUser.id, urlDatabase);
-  if (!urlChecker.includes(req.params.shortURL)) {
-    return res.send("<html><body><h2>this is not a valid URL</h2></body></html>");
+  if(!urlDatabase[req.params.shortURL]) {
+    return res.send("<html><body><h2>That shortURL does not exist.</h2></body></html>");
   }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
@@ -188,4 +180,10 @@ app.get("/register", (req,res) => {
     user: currentUser
   };
   res.render("urls_registration", templateVars);
+});
+
+//Server is listening--------------------------------------------
+
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });
